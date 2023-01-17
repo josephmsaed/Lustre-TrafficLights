@@ -1,0 +1,34 @@
+-- Pedestrians traffic light
+node Pedestrian_TL(button: bool) returns (red, green: bool);
+var counter: int;
+let
+
+counter = 0 -> if pre button or (pre counter > 0 and pre counter <=5)
+		then pre(counter) + 1
+		else 0;
+
+red = true -> counter < 2;
+
+green = false -> counter >=2;
+
+tel;
+
+
+-- Cars traffic light
+node Car_TL(button: bool, id: int) returns (red, green, yellow: bool);
+var counter: int;
+let
+
+counter = (if (id = 0) then 0 else 5) -> if (pre counter < 9) then pre(counter) + 1
+		else 0;
+
+red = (id = 0) -> counter <= 4; -- id is to specify if the road (NS or EW)
+
+green = not (id = 0) -> counter > 4 and counter <= 8;
+
+yellow = false -> counter > 8;
+
+
+tel;
+
+	

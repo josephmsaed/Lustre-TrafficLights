@@ -1,0 +1,4 @@
+# Rdbg Version "v1.199.0" ("opam")
+# sut: ./Pedestrian_TL.exec
+#inputs "button":bool 
+#outputs "red":bool "green":bool 
