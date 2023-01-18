@@ -15,7 +15,7 @@ tel;
 
 
 -- Cars traffic light
-node Car_TL(button: bool, id: int) returns (red, green, yellow: bool);
+node Car_TL(button: bool; id: int) returns (red, green, yellow: bool);
 var counter: int;
 let
 
@@ -31,4 +31,30 @@ yellow = false -> counter > 8;
 
 tel;
 
+
+-- Main
+node Main(NS_button, EW_button: bool) returns (NS_Cars, EW_Cars: int);
+var id0, id1: int;
+var NS_R, NS_Y, NS_G, EW_R, EW_Y, EW_G: bool;
+let
+
+id0 = 0; -- NS road
+id1 = 1; -- EW road
+
+(NS_R, NS_G, NS_Y) = Car_TL(NS_button, id0);
+(EW_R, EW_G, EW_Y) = Car_TL(EW_button, id1);
+
+-- Outputs:
+NS_Cars = if NS_R then 0
+	else if NS_Y then 1
+	else if NS_G then 2
+	else pre(NS_Cars);
+	
+EW_Cars = if EW_R then 0
+	else if EW_Y then 1
+	else if EW_G then 2
+	else pre(EW_Cars);
+
+
+tel;
 	
