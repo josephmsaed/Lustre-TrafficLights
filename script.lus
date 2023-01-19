@@ -1,11 +1,13 @@
-
 -- Pedestrians traffic light
-node Pedestrian_TL(button: bool) returns (red, green: bool);
+node Pedestrian_TL(button: bool) 
+returns (red, green: bool);
 var counter: int;
 let
+-- Green light lasts for 5 ticks and Red for 1 tick after button
+-- press
 
-counter = 0 -> if pre button or (pre counter > 0 and pre counter <=5)
-		then pre(counter) + 1
+counter = 0 -> if pre button or (pre counter > 0 and pre counter <=5) 
+			then pre(counter) + 1
 		else 0;
 
 red = true -> counter < 2;
@@ -13,50 +15,53 @@ red = true -> counter < 2;
 green = false -> counter >=2;
 
 tel;
---------------------------------------------------------------------------------
+-------------------------------------------------------
 
 -- Cars traffic light
-node Car_TL(button, clear_to_green: bool; id: int) returns (red, green, yellow: bool);
+node Car_TL(button, clear_to_green: bool; id: int)
+returns (red, green, yellow: bool);
 var counter: int;
-
 let
-
--- if the light was green or yellow and the button is pressed: Y(1) then R(5)
--- if the light was red and the button is pressed: stays R(5)
+-- id is to specify if the road (NS or EW)
+-- if the light was green or yellow and the button is pressed:
+-- Y(1) then R
+-- if the light was red and the button is pressed: stays R
 
 counter = (if (id = 0) then 0 else 5) ->
+-- initial state depends on id value (different for NS and EW roads)
 	if (pre button) then
-		if (pre counter <= 4) then 		-- button while G or Y
-			4 				--Y
-		else 					-- button while R
-			5 				--R
+		if (pre counter <= 4) then	-- button while G or Y
+			4	-- leads to Y
+		else	-- button while R
+			5	-- leads to R
 	else(
-		if (clear_to_green and pre counter >= 9) then
+		if (clear_to_green and pre counter >= 9) then 
+		-- to make sure the other road is R before going G
 			0
 		else
 			pre counter + 1
 	);
 			
 
-red = not (id = 0) -> counter > 4; -- id is to specify if the road (NS or EW)
+red = not (id = 0) -> counter > 4; -- 7 ticks minimum
 
-green = (id = 0) -> counter < 4;
+green = (id = 0) -> counter < 4; -- 4 ticks 
 
-yellow = false -> counter = 4;
+yellow = false -> counter = 4;	-- 1 tick
 
 tel;
---------------------------------------------------------------------------------
+-------------------------------------------------------
 
 -- Main node to simulate the system
-node Main(NS_button, EW_button: bool) returns (NS_Cars, EW_Cars, NS_Ped, EW_Ped: int);
-var id0, id1: int;
-var NS_R, NS_Y, NS_G, EW_R, EW_Y, EW_G: bool;
-var P_NS_R, P_NS_G, P_EW_R, P_EW_G: bool; 
+node Main(NS_button, EW_button: bool)
+returns (NS_Cars, EW_Cars, NS_Ped, EW_Ped: int);
+var id0, id1: int; -- road identifier
+var NS_R, NS_Y, NS_G, EW_R, EW_Y, EW_G: bool; -- all 6 cars TL
+var P_NS_R, P_NS_G, P_EW_R, P_EW_G: bool;  -- all 4 pedestrians TL
 let
 
 id0 = 0; -- NS road
 id1 = 1; -- EW road
-
 
 (NS_R, NS_G, NS_Y) = Car_TL(NS_button, pre(EW_R), id0);
 (EW_R, EW_G, EW_Y) = Car_TL(EW_button, pre(NS_R), id1);
@@ -64,19 +69,17 @@ id1 = 1; -- EW road
 (P_NS_R, P_NS_G) = Pedestrian_TL(NS_button);
 (P_EW_R, P_EW_G) = Pedestrian_TL(EW_button);
 
-
 -- Outputs:
+-- Red = 0, Yellow = 1, Green = 2
 NS_Cars = if NS_R then 0
 		else if NS_Y then 1
 		else if NS_G then 2
 		else pre(NS_Cars);
-		
 	
 EW_Cars = if EW_R then 0
 		else if EW_Y then 1
 		else if EW_G then 2
 		else pre(EW_Cars);
-		
 
 NS_Ped = if P_NS_R then 0
 	else if P_NS_G then 2
@@ -87,5 +90,5 @@ EW_Ped = if P_EW_R then 0
 	else pre(EW_Ped);
 
 tel;
---------------------------------------------------------------------------------
+-------------------------------------------------------
 	
