@@ -1,3 +1,4 @@
+
 -- Pedestrians traffic light
 node Pedestrian_TL(button: bool) returns (red, green: bool);
 var counter: int;
@@ -12,49 +13,79 @@ red = true -> counter < 2;
 green = false -> counter >=2;
 
 tel;
-
+--------------------------------------------------------------------------------
 
 -- Cars traffic light
-node Car_TL(button: bool; id: int) returns (red, green, yellow: bool);
+node Car_TL(button, clear_to_green: bool; id: int) returns (red, green, yellow: bool);
 var counter: int;
+
 let
 
-counter = (if (id = 0) then 0 else 5) -> if (pre counter < 9) then pre(counter) + 1
-		else 0;
+-- if the light was green or yellow and the button is pressed: Y(1) then R(5)
+-- if the light was red and the button is pressed: stays R(5)
 
-red = (id = 0) -> counter <= 4; -- id is to specify if the road (NS or EW)
+counter = (if (id = 0) then 0 else 5) ->
+	if (pre button) then
+		if (pre counter <= 4) then 		-- button while G or Y
+			4 				--Y
+		else 					-- button while R
+			5 				--R
+	else(
+		if (clear_to_green and pre counter >= 9) then
+			0
+		else
+			pre counter + 1
+	);
+			
 
-green = not (id = 0) -> counter > 4 and counter <= 8;
+red = not (id = 0) -> counter > 4; -- id is to specify if the road (NS or EW)
 
-yellow = false -> counter > 8;
+green = (id = 0) -> counter < 4;
 
+yellow = false -> counter = 4;
 
 tel;
+--------------------------------------------------------------------------------
 
-
--- Main
-node Main(NS_button, EW_button: bool) returns (NS_Cars, EW_Cars: int);
+-- Main node to simulate the system
+node Main(NS_button, EW_button: bool) returns (NS_Cars, EW_Cars, NS_Ped, EW_Ped: int);
 var id0, id1: int;
 var NS_R, NS_Y, NS_G, EW_R, EW_Y, EW_G: bool;
+var P_NS_R, P_NS_G, P_EW_R, P_EW_G: bool; 
 let
 
 id0 = 0; -- NS road
 id1 = 1; -- EW road
 
-(NS_R, NS_G, NS_Y) = Car_TL(NS_button, id0);
-(EW_R, EW_G, EW_Y) = Car_TL(EW_button, id1);
+
+(NS_R, NS_G, NS_Y) = Car_TL(NS_button, pre(EW_R), id0);
+(EW_R, EW_G, EW_Y) = Car_TL(EW_button, pre(NS_R), id1);
+
+(P_NS_R, P_NS_G) = Pedestrian_TL(NS_button);
+(P_EW_R, P_EW_G) = Pedestrian_TL(EW_button);
+
 
 -- Outputs:
 NS_Cars = if NS_R then 0
-	else if NS_Y then 1
-	else if NS_G then 2
-	else pre(NS_Cars);
+		else if NS_Y then 1
+		else if NS_G then 2
+		else pre(NS_Cars);
+		
 	
 EW_Cars = if EW_R then 0
-	else if EW_Y then 1
-	else if EW_G then 2
-	else pre(EW_Cars);
+		else if EW_Y then 1
+		else if EW_G then 2
+		else pre(EW_Cars);
+		
 
+NS_Ped = if P_NS_R then 0
+	else if P_NS_G then 2
+	else pre(NS_Ped);
+	
+EW_Ped = if P_EW_R then 0
+	else if P_EW_G then 2
+	else pre(EW_Ped);
 
 tel;
+--------------------------------------------------------------------------------
 	
